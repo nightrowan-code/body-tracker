@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Body Outline Progress Tracker</title>
+<style>
+  :root {
+    --bg: #191919;
+    --card: #202020;
+    --border: #2f2f2f;
+    --text: #ebebeb;
+    --muted: #9b9b9b;
+    --accent: #38bdf8;
+    --accent-fill: rgba(56, 189, 248, 0.22);
+    --ghost: #6b7280;
+    --ghost-fill: rgba(107, 114, 128, 0.08);
+    --good: #34d399;
+  }
+  * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body {
+    margin: 0; padding: 16px; background: var(--bg); color: var(--text);
+    display: flex; justify-content: center; align-items: flex-start;
+  }
+  .widget {
+    width: 100%; max-width: 680px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+    display: grid; grid-template-columns: 240px 1fr; gap: 20px;
+  }
+  @media (max-width: 560px) {
+    .widget { grid-template-columns: 1fr; }
+  }
+  .canvas-box {
+    background: #161616; border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px; display: flex; flex-direction: column; align-items: center;
+  }
+  svg { width: 100%; max-width: 210px; height: auto; overflow: visible; }
+  .legend {
+    display: flex; gap: 14px; font-size: 11px; color: var(--muted); margin-top: 8px;
+  }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .dot-ghost {
+    width: 12px; height: 2px; border-top: 2px dashed var(--ghost); display: inline-block;
+  }
+  .dot-curr {
+    width: 10px; height: 10px; border-radius: 2px; background: var(--accent-fill);
+    border: 1.5px solid var(--accent); display: inline-block;
+  }
+  .controls { display: flex; flex-direction: column; gap: 12px; }
+  .header { display: flex; justify-content: space-between; align-items: center; }
+  .header h2 { margin: 0; font-size: 15px; font-weight: 600; }
+  .tabs { display: flex; background: #161616; border-radius: 6px; padding: 2px; border: 1px solid var(--border); }
+  .tab {
+    background: none; border: none; color: var(--muted); font-size: 11px;
+    padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: 500;
+  }
+  .tab.active { background: #2c2c2c; color: var(--text); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field {
+    background: #181818; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  }
+  .field label {
+    display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 4px;
+  }
+  .delta { font-weight: 600; color: var(--good); }
+  .delta.pos { color: #f87171; }
+  .field input {
+    width: 100%; background: transparent; border: none; color: var(--text);
+    font-size: 15px; font-weight: 600; outline: none;
+  }
+  .summary {
+    display: flex; justify-content: space-between; background: #181818;
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+    font-size: 12px;
+  }
+  .summary div span { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; }
+  .summary div strong { font-size: 14px; color: var(--accent); }
+  .actions { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+  .btn {
+    background: #2a2a2a; color: var(--text); border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;
+  }
+  .btn:hover { background: #333333; }
+  .btn-primary { background: var(--accent); color: #0b1922; border: none; font-weight: 600; }
+  .btn-primary:hover { opacity: 0.9; }
+  .status { font-size: 11px; color: var(--good); opacity: 0; transition: opacity 0.3s; }
+</style>
+</head>
+<body>
+
+<div class="widget">
+  <div class="canvas-box">
+    <svg id="bodySvg" viewBox="0 0 200 360" xmlns="http://w3.org">
+      <!-- Subtle guide lines -->
+      <line x1="15" y1="108" x2="185" y2="108" stroke="#262626" stroke-dasharray="2 2" />
+      <line x1="15" y1="152" x2="185" y2="152" stroke="#262626" stroke-dasharray="2 2" />
+      <line x1="15" y1="196" x2="185" y2="196" stroke="#262626" stroke-dasharray="2 2" />
+      <line x1="15" y1="242" x2="185" y2="242" stroke="#262626" stroke-dasharray="2 2" />
+
+      <!-- Guide labels -->
+      <text x="12" y="105" fill="#555" font-size="7">BUST</text>
+      <text x="12" y="149" fill="#555" font-size="7">WAIST</text>
+      <text x="12" y="193" fill="#555" font-size="7">HIPS</text>
+      <text x="12" y="239" fill="#555" font-size="7">THIGH</text>
+
+      <!-- Head (Static anchor) -->
+      <circle cx="100" cy="34" r="18" fill="none" stroke="#4b5563" stroke-width="1.5" />
+
+      <!-- Starting Ghost Outline -->
+      <path id="ghostBody" fill="var(--ghost-fill)" stroke="var(--ghost)" stroke-width="1.6" stroke-dasharray="4 3" />
+      <path id="ghostInner" fill="none" stroke="var(--ghost)" stroke-width="1.2" stroke-dasharray="3 3" />
+
+      <!-- Current Progress Outline -->
+      <path id="currBody" fill="var(--accent-fill)" stroke="var(--accent)" stroke-width="2" />
+      <path id="currInner" fill="#161616" stroke="var(--accent)" stroke-width="1.5" />
+    </svg>
+    <div class="legend">
+      <span><i class="dot-ghost"></i> Start</span>
+      <span><i class="dot-curr"></i> Current</span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="header">
+      <h2>Silhouette Progress</h2>
+      <div class="tabs">
+        <button class="tab active" id="tabCurr" onclick="switchMode('current')">Current</button>
+        <button class="tab" id="tabStart" onclick="switchMode('start')">Edit Start</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="field">
+        <label>Weight (lbs) <span class="delta" id="dWeight">0</span></label>
+        <input type="number" step="0.1" id="inWeight" oninput="handleInput()" />
+      </div>
+      <div class="field">
+        <label>Bust / Chest (in) <span class="delta" id="dBust">0</span></label>
+        <input type="number" step="0.25" id="inBust" oninput="handleInput()" />
+      </div>
+      <div class="field">
+        <label>Waist (in) <span class="delta" id="dWaist">0</span></label>
+        <input type="number" step="0.25" id="inWaist" oninput="handleInput()" />
+      </div>
+      <div class="field">
+        <label>Hips (in) <span class="delta" id="dHips">0</span></label>
+        <input type="number" step="0.25" id="inHips" oninput="handleInput()" />
+      </div>
+      <div class="field" style="grid-column: span 2;">
+        <label>Thigh (in) <span class="delta" id="dThigh">0</span></label>
+        <input type="number" step="0.25" id="inThigh" oninput="handleInput()" />
+      </div>
+    </div>
+
+    <div class="summary">
+      <div><span>Weight Change</span><strong id="sumWeight">0.0 lbs</strong></div>
+      <div><span>Total Inches Lost</span><strong id="sumInches">0.0 in</strong></div>
+    </div>
+
+    <div class="actions">
+      <span class="status" id="saveStatus">Saved to browser</span>
+      <button class="btn btn-primary" onclick="saveData()">Save Progress</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const defaultState = {
+    start:   { weight: 195, bust: 42, waist: 36, hips: 45, thigh: 26 },
+    current: { weight: 178, bust: 39.5, waist: 32, hips: 41.5, thigh: 24 }
+  };
+
+  let state = JSON.parse(localStorage.getItem('notionBodyOutline_v1')) || defaultState;
+  let mode = 'current';
+
+  // Convert circumference (in) to visual half-width in SVG coordinates
+  function buildPaths(m) {
+    const cx = 100;
+    const neckW = 10;
+    const shW = Math.max(24, m.bust * 0.78);
+    const bustW = Math.max(22, m.bust * 0.76);
+    const waistW = Math.max(16, m.waist * 0.68);
+    const hipW = Math.max(22, m.hips * 0.78);
+    const thighW = Math.max(11, m.thigh * 0.72);
+    const kneeW = Math.max(8, thighW * 0.66);
+    const ankleW = Math.max(5, thighW * 0.44);
+
+    // Outer silhouette path
+    const outer = `
+      M ${cx - neckW} 52
+      L ${cx - neckW} 64
+      Q ${cx - shW * 0.85} 68, ${cx - shW} 82
+      C ${cx - shW - 3} 96, ${cx - bustW} 102, ${cx - bustW} 112
+      C ${cx - bustW} 128, ${cx - waistW} 138, ${cx - waistW} 152
+      C ${cx - waistW} 168, ${cx - hipW} 180, ${cx - hipW} 198
+      C ${cx - hipW} 218, ${cx - (thighW + 10)} 232, ${cx - (thighW + 8)} 248
+      C ${cx - (thighW + 5)} 268, ${cx - (kneeW + 8)} 285, ${cx - (kneeW + 8)} 296
+      L ${cx - (ankleW + 7)} 344
+      L ${cx - 4} 344
+      L ${cx - 3} 296
+      Q ${cx - 2} 250, ${cx} 218
+      Q ${cx + 2} 250, ${cx + 3} 296
+      L ${cx + 4} 344
+      L ${cx + (ankleW + 7)} 344
+      L ${cx + (kneeW + 8)} 296
+      C ${cx + (kneeW + 8)} 285, ${cx + (thighW + 5)} 268, ${cx + (thighW + 8)} 248
+      C ${cx + (thighW + 10)} 232, ${cx + hipW} 218, ${cx + hipW} 198
+      C ${cx + hipW} 180, ${cx + waistW} 168, ${cx + waistW} 152
+      C ${cx + waistW} 138, ${cx + bustW} 128, ${cx + bustW} 112
+      C ${cx + bustW} 102, ${cx + shW + 3} 96, ${cx + shW} 82
+      Q ${cx + shW * 0.85} 68, ${cx + neckW} 64
+      L ${cx + neckW} 52
+      Z
+    `;
+    return outer;
+  }
+
+  function formatDelta(diff, unit) {
+    if (Math.abs(diff) < 0.01) return { text: '0' + unit, pos: false };
+    const sign = diff > 0 ? '+' : '';
+    return { text: `${sign}${diff.toFixed(1)}${unit}`, pos: diff > 0 };
+  }
+
+  function render() {
+    document.getElementById('ghostBody').setAttribute('d', buildPaths(state.start));
+    document.getElementById('currBody').setAttribute('d', buildPaths(state.current));
+
+    const active = state[mode];
+    document.getElementById('inWeight').value = active.weight;
+    document.getElementById('inBust').value = active.bust;
+    document.getElementById('inWaist').value = active.waist;
+    document.getElementById('inHips').value = active.hips;
+    document.getElementById('inThigh').value = active.thigh;
+
+    const fields = [
+      ['Weight', 'weight', ''],
+      ['Bust', 'bust', '"'],
+      ['Waist', 'waist', '"'],
+      ['Hips', 'hips', '"'],
+      ['Thigh', 'thigh', '"']
+    ];
+
