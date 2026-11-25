@@ -11,10 +11,11 @@
     --border: #2f2f2f;
     --text: #ebebeb;
     --muted: #9b9b9b;
-    --accent: #38bdf8;
-    --accent-fill: rgba(56, 189, 248, 0.22);
-    --ghost: #6b7280;
-    --ghost-fill: rgba(107, 114, 128, 0.08);
+    --accent: #a855f7;
+    --accent-fill: rgba(168, 85, 247, 0.24);
+    --accent-btn-text: #ffffff;
+    --ghost: #71717a;
+    --ghost-fill: rgba(113, 113, 122, 0.08);
     --good: #34d399;
   }
   * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -23,18 +24,18 @@
     display: flex; justify-content: center; align-items: flex-start;
   }
   .widget {
-    width: 100%; max-width: 680px; background: var(--card);
+    width: 100%; max-width: 700px; background: var(--card);
     border: 1px solid var(--border); border-radius: 12px; padding: 20px;
-    display: grid; grid-template-columns: 240px 1fr; gap: 20px;
+    display: grid; grid-template-columns: 250px 1fr; gap: 20px;
   }
-  @media (max-width: 560px) {
+  @media (max-width: 580px) {
     .widget { grid-template-columns: 1fr; }
   }
   .canvas-box {
     background: #161616; border: 1px solid var(--border); border-radius: 10px;
     padding: 12px; display: flex; flex-direction: column; align-items: center;
   }
-  svg { width: 100%; max-width: 210px; height: auto; overflow: visible; }
+  svg { width: 100%; max-width: 225px; height: auto; overflow: visible; }
   .legend {
     display: flex; gap: 14px; font-size: 11px; color: var(--muted); margin-top: 8px;
   }
@@ -52,13 +53,14 @@
   .tabs { display: flex; background: #161616; border-radius: 6px; padding: 2px; border: 1px solid var(--border); }
   .tab {
     background: none; border: none; color: var(--muted); font-size: 11px;
-    padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: 500;
+    padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: 500;
   }
   .tab.active { background: #2c2c2c; color: var(--text); }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .field {
     background: #181818; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
   }
+  .field.editing-start { border-color: var(--accent); }
   .field label {
     display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 4px;
   }
@@ -75,44 +77,37 @@
   }
   .summary div span { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; }
   .summary div strong { font-size: 14px; color: var(--accent); }
-  .actions { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+  .actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: auto; }
+  .btn-group { display: flex; gap: 8px; margin-left: auto; }
   .btn {
     background: #2a2a2a; color: var(--text); border: 1px solid var(--border);
-    padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;
+    padding: 6px 11px; border-radius: 6px; font-size: 12px; cursor: pointer;
   }
   .btn:hover { background: #333333; }
-  .btn-primary { background: var(--accent); color: #0b1922; border: none; font-weight: 600; }
+  .btn-primary { background: var(--accent); color: var(--accent-btn-text); border: none; font-weight: 600; }
   .btn-primary:hover { opacity: 0.9; }
-  .status { font-size: 11px; color: var(--good); opacity: 0; transition: opacity 0.3s; }
+  .status { font-size: 11px; color: var(--good); opacity: 0; transition: opacity 0.25s; }
 </style>
 </head>
 <body>
 
 <div class="widget">
   <div class="canvas-box">
-    <svg id="bodySvg" viewBox="0 0 200 360" xmlns="http://w3.org">
-      <!-- Subtle guide lines -->
-      <line x1="15" y1="108" x2="185" y2="108" stroke="#262626" stroke-dasharray="2 2" />
-      <line x1="15" y1="152" x2="185" y2="152" stroke="#262626" stroke-dasharray="2 2" />
-      <line x1="15" y1="196" x2="185" y2="196" stroke="#262626" stroke-dasharray="2 2" />
-      <line x1="15" y1="242" x2="185" y2="242" stroke="#262626" stroke-dasharray="2 2" />
+    <svg id="bodySvg" viewBox="0 0 240 360" xmlns="http://w3.org">
+      <line x1="12" y1="108" x2="228" y2="108" stroke="#262626" stroke-dasharray="2 2" />
+      <line x1="12" y1="152" x2="228" y2="152" stroke="#262626" stroke-dasharray="2 2" />
+      <line x1="12" y1="196" x2="228" y2="196" stroke="#262626" stroke-dasharray="2 2" />
+      <line x1="12" y1="242" x2="228" y2="242" stroke="#262626" stroke-dasharray="2 2" />
 
-      <!-- Guide labels -->
-      <text x="12" y="105" fill="#555" font-size="7">BUST</text>
-      <text x="12" y="149" fill="#555" font-size="7">WAIST</text>
-      <text x="12" y="193" fill="#555" font-size="7">HIPS</text>
-      <text x="12" y="239" fill="#555" font-size="7">THIGH</text>
+      <text x="10" y="105" fill="#555" font-size="7">BUST</text>
+      <text x="10" y="149" fill="#555" font-size="7">WAIST</text>
+      <text x="10" y="193" fill="#555" font-size="7">HIPS</text>
+      <text x="10" y="239" fill="#555" font-size="7">THIGH</text>
 
-      <!-- Head (Static anchor) -->
-      <circle cx="100" cy="34" r="18" fill="none" stroke="#4b5563" stroke-width="1.5" />
+      <circle cx="120" cy="34" r="18" fill="none" stroke="#4b5563" stroke-width="1.5" />
 
-      <!-- Starting Ghost Outline -->
       <path id="ghostBody" fill="var(--ghost-fill)" stroke="var(--ghost)" stroke-width="1.6" stroke-dasharray="4 3" />
-      <path id="ghostInner" fill="none" stroke="var(--ghost)" stroke-width="1.2" stroke-dasharray="3 3" />
-
-      <!-- Current Progress Outline -->
       <path id="currBody" fill="var(--accent-fill)" stroke="var(--accent)" stroke-width="2" />
-      <path id="currInner" fill="#161616" stroke="var(--accent)" stroke-width="1.5" />
     </svg>
     <div class="legend">
       <span><i class="dot-ghost"></i> Start</span>
@@ -122,33 +117,33 @@
 
   <div class="controls">
     <div class="header">
-      <h2>Silhouette Progress</h2>
+      <h2 id="panelTitle">Current Progress</h2>
       <div class="tabs">
-        <button class="tab active" id="tabCurr" onclick="switchMode('current')">Current</button>
-        <button class="tab" id="tabStart" onclick="switchMode('start')">Edit Start</button>
+        <button type="button" class="tab active" id="tabCurr">Current</button>
+        <button type="button" class="tab" id="tabStart">Edit Start</button>
       </div>
     </div>
 
     <div class="grid">
       <div class="field">
         <label>Weight (lbs) <span class="delta" id="dWeight">0</span></label>
-        <input type="number" step="0.1" id="inWeight" oninput="handleInput()" />
+        <input type="number" step="0.1" id="inWeight" />
       </div>
       <div class="field">
         <label>Bust / Chest (in) <span class="delta" id="dBust">0</span></label>
-        <input type="number" step="0.25" id="inBust" oninput="handleInput()" />
+        <input type="number" step="0.25" id="inBust" />
       </div>
       <div class="field">
         <label>Waist (in) <span class="delta" id="dWaist">0</span></label>
-        <input type="number" step="0.25" id="inWaist" oninput="handleInput()" />
+        <input type="number" step="0.25" id="inWaist" />
       </div>
       <div class="field">
         <label>Hips (in) <span class="delta" id="dHips">0</span></label>
-        <input type="number" step="0.25" id="inHips" oninput="handleInput()" />
+        <input type="number" step="0.25" id="inHips" />
       </div>
       <div class="field" style="grid-column: span 2;">
         <label>Thigh (in) <span class="delta" id="dThigh">0</span></label>
-        <input type="number" step="0.25" id="inThigh" oninput="handleInput()" />
+        <input type="number" step="0.25" id="inThigh" />
       </div>
     </div>
 
@@ -158,24 +153,50 @@
     </div>
 
     <div class="actions">
-      <span class="status" id="saveStatus">Saved to browser</span>
-      <button class="btn btn-primary" onclick="saveData()">Save Progress</button>
+      <span class="status" id="saveStatus">Saved!</span>
+      <div class="btn-group">
+        <button type="button" class="btn" id="btnLink" title="Copy a link with your saved numbers">Copy Save Link</button>
+        <button type="button" class="btn btn-primary" id="btnSave">Save Progress</button>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
+  const STORAGE_KEY = 'notionBodyOutline_v3';
   const defaultState = {
-    start:   { weight: 195, bust: 42, waist: 36, hips: 45, thigh: 26 },
-    current: { weight: 178, bust: 39.5, waist: 32, hips: 41.5, thigh: 24 }
+    start:   { weight: 227.6, bust: 49, waist: 47.5, hips: 52.5, thigh: 29 },
+    current: { weight: 227.6, bust: 49, waist: 47.5, hips: 52.5, thigh: 29 }
   };
 
-  let state = JSON.parse(localStorage.getItem('notionBodyOutline_v1')) || defaultState;
+  function loadInitialState() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('s') && params.has('c')) {
+        const s = params.get('s').split(',').map(Number);
+        const c = params.get('c').split(',').map(Number);
+        if (s.length === 5 && c.length === 5 && !s.some(isNaN) && !c.some(isNaN)) {
+          return {
+            start:   { weight: s, bust: s, waist: s, hips: s, thigh: s },
+            current: { weight: c, bust: c, waist: c, hips: c, thigh: c }
+          };
+        }
+      }
+    } catch (e) {}
+
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+
+    return JSON.parse(JSON.stringify(defaultState));
+  }
+
+  let state = loadInitialState();
   let mode = 'current';
 
-  // Convert circumference (in) to visual half-width in SVG coordinates
   function buildPaths(m) {
-    const cx = 100;
+    const cx = 120;
     const neckW = 10;
     const shW = Math.max(24, m.bust * 0.78);
     const bustW = Math.max(22, m.bust * 0.76);
@@ -185,8 +206,7 @@
     const kneeW = Math.max(8, thighW * 0.66);
     const ankleW = Math.max(5, thighW * 0.44);
 
-    // Outer silhouette path
-    const outer = `
+    return `
       M ${cx - neckW} 52
       L ${cx - neckW} 64
       Q ${cx - shW * 0.85} 68, ${cx - shW} 82
@@ -212,7 +232,6 @@
       L ${cx + neckW} 52
       Z
     `;
-    return outer;
   }
 
   function formatDelta(diff, unit) {
@@ -226,17 +245,3 @@
     document.getElementById('currBody').setAttribute('d', buildPaths(state.current));
 
     const active = state[mode];
-    document.getElementById('inWeight').value = active.weight;
-    document.getElementById('inBust').value = active.bust;
-    document.getElementById('inWaist').value = active.waist;
-    document.getElementById('inHips').value = active.hips;
-    document.getElementById('inThigh').value = active.thigh;
-
-    const fields = [
-      ['Weight', 'weight', ''],
-      ['Bust', 'bust', '"'],
-      ['Waist', 'waist', '"'],
-      ['Hips', 'hips', '"'],
-      ['Thigh', 'thigh', '"']
-    ];
-
